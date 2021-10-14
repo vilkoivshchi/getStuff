@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "dgSpecHash": "8Zo2243QbMqLsm8y+6CjEb8NDUkkoum8z5JeE3hlc7iU0iRpsOhLl0EUr2HlfuQN4jC5tHnTutNFRQX6CivfWg==",
+  "success": true,
+  "projectFilePath": "D:\\repos\\getStuff\\getStuff\\getStuff.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\utrom\\.nuget\\packages\\npgsql\\5.0.10\\npgsql.5.0.10.nupkg.sha512",
+    "C:\\Users\\utrom\\.nuget\\packages\\system.runtime.compilerservices.unsafe\\4.6.0\\system.runtime.compilerservices.unsafe.4.6.0.nupkg.sha512",
+    "C:\\Users\\utrom\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x86\\5.0.9\\microsoft.netcore.app.runtime.win-x86.5.0.9.nupkg.sha512",
+    "C:\\Users\\utrom\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x86\\5.0.9\\microsoft.windowsdesktop.app.runtime.win-x86.5.0.9.nupkg.sha512",
+    "C:\\Users\\utrom\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x86\\5.0.9\\microsoft.aspnetcore.app.runtime.win-x86.5.0.9.nupkg.sha512"
+  ],
+  "logs": []
+}

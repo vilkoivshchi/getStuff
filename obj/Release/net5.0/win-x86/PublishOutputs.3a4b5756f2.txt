@@ -1,0 +1,7 @@
+D:\repos\getStuff\getStuff\bin\Release\net5.0\publish\getStuff.pdb
+D:\repos\getStuff\getStuff\bin\Release\net5.0\publish\transponders.xml
+D:\repos\getStuff\getStuff\bin\Release\net5.0\publish\clrcompression.dll
+D:\repos\getStuff\getStuff\bin\Release\net5.0\publish\clrjit.dll
+D:\repos\getStuff\getStuff\bin\Release\net5.0\publish\coreclr.dll
+D:\repos\getStuff\getStuff\bin\Release\net5.0\publish\mscordaccore.dll
+D:\repos\getStuff\getStuff\bin\Release\net5.0\publish\getStuff.exe

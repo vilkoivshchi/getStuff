@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "e4nI49zHznsSFlE+CzR3lVrqkoaxREkITVubb3FYPBY8pYfMLp7XrfGF8DaCxjNF2oGWv8lUktGwIK1W3VjjTQ==",
+  "success": true,
+  "projectFilePath": "D:\\repos\\getStuff\\getStuff\\getStuff.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\utrom\\.nuget\\packages\\npgsql\\5.0.10\\npgsql.5.0.10.nupkg.sha512",
+    "C:\\Users\\utrom\\.nuget\\packages\\system.runtime.compilerservices.unsafe\\4.6.0\\system.runtime.compilerservices.unsafe.4.6.0.nupkg.sha512"
+  ],
+  "logs": []
+}
