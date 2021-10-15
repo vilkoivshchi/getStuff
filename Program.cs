@@ -19,6 +19,8 @@ namespace getStuff
         private static string Password = "13691505";
         private static string Port = "5432";
         
+
+
         static void Main(string[] args)
         {
             Dictionary<int, bool> tunersList = GetDevicesList();
@@ -40,10 +42,14 @@ namespace getStuff
 
         static async void MeasureStuffing(Dictionary<int, bool> tuners, List<DVBTransponder> transponders, string tmpFolder)
         {
-
+            var stopwatch = Stopwatch.StartNew();
+            
             // temp vars
             int currentTuner = 0;
             int currentTrasponder = 0;
+            Dictionary<int, Task> TaskDict = new Dictionary<int, Task>();
+            List<Task> TaskList = new List<Task>();
+            Task[] TaskArr;
             while (true)
             {
                 foreach (KeyValuePair<int, bool> kvp in tuners)
@@ -53,65 +59,33 @@ namespace getStuff
                         currentTuner = kvp.Key;
                         tuners[kvp.Key] = true;
 
-
-                        DateTime timeStamp = DateTime.UtcNow;
                         string tmpFileName = $"{tmpFolder}\\TS{transponders[currentTrasponder].TransponderNumber}.tmp";
                         Console.WriteLine($"Begin measure ts{transponders[currentTrasponder].TransponderNumber} at tuner #{currentTuner}...");
 
-                        await Task.Run(() => RunMeasure(currentTuner, transponders[currentTrasponder], tmpFileName));
-                        try
+                         Task task = Task.Run(() => RunMeasure(currentTuner, transponders[currentTrasponder], tmpFileName));
+                         //await Task.Run(() => RunMeasure(currentTuner, transponders[currentTrasponder], tmpFileName));
+                        //currentTrasponder++;
+                        //tuners[kvp.Key] = false;
+                        //if (currentTrasponder == transponders.Count) currentTrasponder = 0;
+                        //TaskDict.Add(kvp.Key, task);
+                        TaskList.Add(task);
+                        TaskArr = TaskList.ToArray();
+                        //List<Task<int>> Tasks = TaskDict 
+
+                        //Task FinishedTask = await Task.WaitAny(TaskArr);
+                        /*
+                        foreach(KeyValuePair<int, Task> taskKvp in TaskList)
                         {
-                            string stuffingLine = String.Empty;
-                            string stuffingBitrateLine = String.Empty;
-                            int bitrate = -1;
-                            using (StreamReader tmpReader = new StreamReader(tmpFileName))
+                            if(taskKvp.Value == Task.CompletedTask)
                             {
-                                List<string> tmpFileContent = new List<string>();
-
-                                while (tmpReader.Peek() >= 0)
-                                {
-                                    tmpFileContent.Add(tmpReader.ReadLine());
-                                }
-
-                                foreach (string line in tmpFileContent)
-                                {
-                                    Regex tmpRegex = new Regex(@":pid=8191:");
-                                    MatchCollection pidMatches = tmpRegex.Matches(line);
-                                    if (pidMatches.Count > 0)
-                                    {
-                                        stuffingLine = line;
-                                    }
-                                }
-
-                                if (stuffingLine.Length > 0)
-                                {
-                                    Regex pidRegex = new Regex(@"bitrate=[\d]{1,}");
-                                    MatchCollection pidMatchCollection = pidRegex.Matches(stuffingLine);
-                                    stuffingBitrateLine = Regex.Replace(pidMatchCollection[0].Value, "bitrate=", String.Empty);
-                                    int.TryParse(stuffingBitrateLine, out bitrate);
-
-                                }
+                                currentTrasponder++;
+                                tuners[kvp.Key] = false;
+                                if (currentTrasponder == transponders.Count) currentTrasponder = 0;
+                                Console.WriteLine($"task {taskKvp.Value.Id} complete");
                             }
-                            if (File.Exists(tmpFileName))
-                            {
-                                File.Delete(tmpFileName);
-                            }
-                            Console.WriteLine($"date:{timeStamp}, bitrate:{bitrate}");
-                            if (bitrate >= 0)
-                            {
-                                StoreToDatabase(transponders[currentTrasponder].TransponderNumber, timeStamp, bitrate);
-                            }
+                            
                         }
-                        catch (Exception e)
-                        {
-                            Console.WriteLine($"{tmpFileName} not found");
-                            Console.WriteLine(e.Message);
-                        }
-                        //Task.WaitAll();
-                        Console.WriteLine($"Measure of ts{transponders[currentTrasponder].TransponderNumber} complete");
-                        currentTrasponder++;
-                        tuners[kvp.Key] = false;
-                        if (currentTrasponder == transponders.Count - 1) currentTrasponder = 0;
+                        */
                     }
                 }
             }
@@ -127,7 +101,7 @@ namespace getStuff
                 using (var command = new NpgsqlCommand($"CREATE TABLE IF NOT EXISTS TS{tsNum}(time TIMESTAMP WITHOUT TIME ZONE PRIMARY KEY, bitrate INTEGER)", conn))
                 {
                     command.ExecuteNonQuery();
-                    Console.Out.WriteLine("Finished creating table");
+                    //Console.Out.WriteLine("Finished creating table");
                 }
                 using (var command = new NpgsqlCommand($"INSERT INTO TS{tsNum} (time, bitrate) VALUES (@n1, @q1)", conn))
                 {
@@ -143,7 +117,8 @@ namespace getStuff
         {
             Process measureProc = new Process();
             measureProc.StartInfo.FileName = "tsp";
-            measureProc.StartInfo.Arguments = $"-I dvb -d :{tuner} --bandwidth 8 --delivery-system DVB-C --frequency {transponder.Frequency} --modulation {transponder.Modulation}-QAM -P skip 500 -P until -s 1 -P analyze --normalized -o {tempFile} -O drop";
+            //measureProc.StartInfo.Arguments = $"-I dvb -d :{tuner} --bandwidth 8 --delivery-system DVB-C --frequency {transponder.Frequency} --modulation {transponder.Modulation}-QAM -P skip 500 -P until -s 1 -P analyze --normalized -o {tempFile} -O drop";
+            measureProc.StartInfo.Arguments = $"--realtime -v -t -I ip {} -P bitrate_monitor -p 1 --pid 8191 -O drop";
             measureProc.StartInfo.UseShellExecute = false;
             measureProc.StartInfo.RedirectStandardOutput = true;
             measureProc.Start();
@@ -151,7 +126,57 @@ namespace getStuff
             {
                 Console.WriteLine(measureProc.StandardOutput.ReadLine());
             }
+            try
+            {
+                DateTime timeStamp = DateTime.UtcNow;
+                string stuffingLine = String.Empty;
+                string stuffingBitrateLine = String.Empty;
+                int bitrate = -1;
+                using (StreamReader tmpReader = new StreamReader(tempFile))
+                {
+                    List<string> tmpFileContent = new List<string>();
 
+                    while (tmpReader.Peek() >= 0)
+                    {
+                        tmpFileContent.Add(tmpReader.ReadLine());
+                    }
+
+                    foreach (string line in tmpFileContent)
+                    {
+                        Regex tmpRegex = new Regex(@":pid=8191:");
+                        MatchCollection pidMatches = tmpRegex.Matches(line);
+                        if (pidMatches.Count > 0)
+                        {
+                            stuffingLine = line;
+                        }
+                    }
+
+                    if (stuffingLine.Length > 0)
+                    {
+                        Regex pidRegex = new Regex(@"bitrate=[\d]{1,}");
+                        MatchCollection pidMatchCollection = pidRegex.Matches(stuffingLine);
+                        stuffingBitrateLine = Regex.Replace(pidMatchCollection[0].Value, "bitrate=", String.Empty);
+                        int.TryParse(stuffingBitrateLine, out bitrate);
+
+                    }
+                }
+                if (File.Exists(tempFile))
+                {
+                    File.Delete(tempFile);
+                }
+                Console.WriteLine($"date:{timeStamp}, bitrate:{bitrate}");
+                if (bitrate >= 0)
+                {
+                    StoreToDatabase(transponder.TransponderNumber, timeStamp, bitrate);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"{tempFile} not found");
+                Console.WriteLine(e.Message);
+            }
+            //Task.WaitAll();
+            Console.WriteLine($"Measure of ts{transponder.TransponderNumber} complete");
         }
         static Dictionary<int, bool> GetDevicesList()
         {
@@ -161,7 +186,6 @@ namespace getStuff
             devlist.StartInfo.RedirectStandardOutput = true;
             Dictionary<int, bool> devicesList = new Dictionary<int, bool>();
             devlist.Start();
-            int tunersCount = 0;
             while (!devlist.StandardOutput.EndOfStream)
             {
                 string currentStr = devlist.StandardOutput.ReadLine();
@@ -169,8 +193,11 @@ namespace getStuff
                 Match tunersMatch = regex.Match(currentStr);
                 if (tunersMatch.Success)
                 {
-                    devicesList.Add(tunersCount, false);
-                    tunersCount++;
+                    Regex getTunerNumRegex = new Regex(@"^[\d]{1,}");
+                    MatchCollection tunersMatchCollection = getTunerNumRegex.Matches(currentStr);
+                    int tunerNumber;
+                    int.TryParse(tunersMatchCollection[0].Value, out tunerNumber);
+                    devicesList.Add(tunerNumber, false);
                 }
             }
             return devicesList;

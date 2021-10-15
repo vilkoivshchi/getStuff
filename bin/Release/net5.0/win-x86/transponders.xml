@@ -5,7 +5,7 @@
 <transponder num="3" freq="602000000" qam="64" />
 <transponder num="11" freq="362000000" qam="64" />
 <transponder num="12" freq="378000000" qam="256" />
-<transponder num="15" freq="692000000" qam="64" />
+<transponder num="15" freq="698000000" qam="64" />
 <transponder num="18" freq="650000000" qam="256" />
 <transponder num="19" freq="658000000" qam="256" />
 <transponder num="20" freq="722000000" qam="256" />

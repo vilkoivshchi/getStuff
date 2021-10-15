@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\repos\\getStuff\\getStuff\\getStuff.csproj": {}
+    "D:\\Repos\\getStuff\\getStuff\\getStuff.csproj": {}
   },
   "projects": {
-    "D:\\repos\\getStuff\\getStuff\\getStuff.csproj": {
+    "D:\\Repos\\getStuff\\getStuff\\getStuff.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\repos\\getStuff\\getStuff\\getStuff.csproj",
+        "projectUniqueName": "D:\\Repos\\getStuff\\getStuff\\getStuff.csproj",
         "projectName": "getStuff",
-        "projectPath": "D:\\repos\\getStuff\\getStuff\\getStuff.csproj",
+        "projectPath": "D:\\Repos\\getStuff\\getStuff\\getStuff.csproj",
         "packagesPath": "C:\\Users\\utrom\\.nuget\\packages\\",
-        "outputPath": "D:\\repos\\getStuff\\getStuff\\obj\\",
+        "outputPath": "D:\\Repos\\getStuff\\getStuff\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\utrom\\AppData\\Roaming\\NuGet\\NuGet.Config",
