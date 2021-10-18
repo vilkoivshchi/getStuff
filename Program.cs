@@ -12,12 +12,12 @@ namespace getStuff
 {
     class Program
     {
-        private static string Host = "10.253.55.21";
-        private static string User = "stuffing";
-        private static string DBname = "stuffing_db";
-        private static string Password = "13691505";
-        private static string Port = "5432";
-        
+        private static string Host = String.Empty;
+        private static string User = String.Empty;
+        private static string DBname = String.Empty;
+        private static string Password = String.Empty;
+        private static string Port = String.Empty;
+        private static string interfaceIp = String.Empty;
         static void Main(string[] args)
         {
             List<DVBMux> DVBMuxes = ParseConfig($"{AppContext.BaseDirectory}\\muxes.xml");
@@ -27,17 +27,18 @@ namespace getStuff
         static void MeasureStuffing(List<DVBMux> muxes)
         {
             List<Task> TaskList = new List<Task>();
-            for(int i = 0; i < 3; i++)
+            for(int i = 0; i < muxes.Count; i++)
             {
-                Console.WriteLine(muxes[i].Address);
-                TaskList.Add(Task.Run(() => RunMeasure(muxes[i])));
-                
-                while(TaskList[i].Status != TaskStatus.Running)
+                Task task = Task.Run(() => RunMeasure(muxes[i]));
+                TaskList.Add(task);
+
+                while (task.Status != TaskStatus.Running)
                 {
                     Thread.Sleep(100);
                 }
+                
             }
-                Task.WaitAll(TaskList.ToArray());
+            Task.WaitAll(TaskList.ToArray());
         }
 
         static void StoreToDatabase(int tsNum, DateTime timeStamp, int stuffBitrate)
@@ -57,14 +58,16 @@ namespace getStuff
                     command.Parameters.AddWithValue("n1", NpgsqlTypes.NpgsqlDbType.Timestamp, timeStamp);
                     command.Parameters.AddWithValue("q1", stuffBitrate);
 
-                    Console.Out.WriteLine(String.Format($"Number of rows inserted={command.ExecuteNonQuery()}"));
+                    Console.Out.WriteLine(String.Format($"Write for ts{tsNum} complete. Number of rows inserted={command.ExecuteNonQuery()}"));
                 }
+                conn.Close();
             }
         }
 
         static void OutputHandler(object sendingProcess, DataReceivedEventArgs outLine)
         {
-            if (outLine.Data.Length > 0)
+            
+            if (!String.IsNullOrEmpty(outLine.Data))
             {
                 Process sendProc = (Process)sendingProcess;
                 string arguments = sendProc.StartInfo.Arguments;
@@ -97,7 +100,7 @@ namespace getStuff
             Process measureProc = new();
 
             measureProc.StartInfo.FileName = "tsp";
-            measureProc.StartInfo.Arguments = $"--realtime -v -t -I ip {mux.Address}:{mux.Port} -P bitrate_monitor -p 1 -t 1 --pid 8191 --set-label-normal {mux.TransponderNumber} -O drop";
+            measureProc.StartInfo.Arguments = $"--realtime -v -t -I ip {mux.Address}:{mux.Port} -l {interfaceIp} -P bitrate_monitor -p 1 -t 1 --pid 8191 --set-label-normal {mux.TransponderNumber} -O drop";
             measureProc.StartInfo.UseShellExecute = false;
             measureProc.StartInfo.RedirectStandardOutput = true;
             measureProc.StartInfo.RedirectStandardError = true;
@@ -128,16 +131,35 @@ namespace getStuff
             XmlDocument configFile = new XmlDocument();
             configFile.LoadXml(xmlString);
             XmlElement xRoot = configFile.DocumentElement;
-            foreach (XmlElement xNode in xRoot)
+            foreach (XmlElement xNodes in xRoot)
             {
-                if(xNode.Attributes.Count > 0)
+                foreach (XmlElement xElement in xNodes) 
                 {
-                    int num;
-                    int port;
-                    
-                    if(int.TryParse(xNode.GetAttribute("num"), out num) && int.TryParse(xNode.GetAttribute("port"), out port))
+                    if (xElement.Attributes.Count > 0)
                     {
-                        muxes.Add(new DVBMux(num, xNode.GetAttribute("ip"), port));
+                        int num;
+                        int port;
+                        if(xElement.Name == "mux")
+                        {
+                            if (int.TryParse(xElement.GetAttribute("num"), out num) && int.TryParse(xElement.GetAttribute("port"), out port))
+                            {
+                                muxes.Add(new DVBMux(num, xElement.GetAttribute("ip"), port));
+                            }
+                        }
+                        
+                        if (xElement.Name == "interface")
+                        {
+                            interfaceIp = xElement.GetAttribute("address");
+                        }
+
+                        if (xElement.Name == "database")
+                        {
+                            Host = xElement.GetAttribute("host");
+                            User = xElement.GetAttribute("user");
+                            DBname = xElement.GetAttribute("dbname");
+                            Password = xElement.GetAttribute("password");
+                            Port = xElement.GetAttribute("port");
+                        }
                     }
                 }
             }

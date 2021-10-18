@@ -1,25 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<muxes>
-<mux num="1" ip="238.1.1.1" port="41024" />
-<mux num="2" ip="238.1.1.2" port="41024" />
-<mux num="3" ip="238.1.1.3" port="41024" />
-<mux num="11" ip="238.1.1.11" port="41024" />
-<mux num="12" ip="238.1.1.12" port="41024" />
-<mux num="15" ip="238.1.1.15" port="41024" />
-<mux num="18" ip="238.1.1.18" port="41024" />
-<mux num="19" ip="238.1.1.19" port="41024" />
-<mux num="20" ip="238.1.1.20" port="41024" />
-<mux num="22" ip="238.1.1.22" port="41024" />
-<mux num="23" ip="238.1.1.23" port="41024" />
-<mux num="24" ip="238.1.1.24" port="41024" />
-<mux num="27" ip="238.1.1.27" port="41024" />
-<mux num="29" ip="238.1.1.29" port="41024" />
-<mux num="30" ip="238.1.1.30" port="41024" />
-<mux num="31" ip="238.1.1.31" port="41024" />
-<mux num="32" ip="238.1.1.32" port="41024" />
-<mux num="33" ip="238.1.1.33" port="41024" />
-<mux num="34" ip="238.1.1.34" port="41024" />
-<mux num="35" ip="238.1.1.35" port="41024" />
-<mux num="36" ip="238.1.1.36" port="41024" />
-<mux num="37" ip="238.1.1.37" port="41024" />
-</muxes>
+<config>
+	<muxes>
+		<mux num="30" ip="238.1.1.30" port="41024" />
+		<mux num="31" ip="238.1.1.31" port="41024" />
+	</muxes>
+	<interfaces>
+		<interface address="192.168.10.44" />
+	</interfaces>
+	<databases>
+		<database host="10.253.55.21" user="stuffing" dbname="stuffing_db" password="13691505" port="5432"/>
+	</databases>
+</config>
