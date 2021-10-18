@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using Npgsql;
@@ -11,84 +12,32 @@ namespace getStuff
 {
     class Program
     {
-        const int ERROR_BAD_UNIT = 0x14;
-
         private static string Host = "10.253.55.21";
         private static string User = "stuffing";
         private static string DBname = "stuffing_db";
         private static string Password = "13691505";
         private static string Port = "5432";
         
-
-
         static void Main(string[] args)
         {
-            Dictionary<int, bool> tunersList = GetDevicesList();
-            if(tunersList.Count > 0)
-            {
-                List<DVBTransponder> DVBTransponders = ParseConfig($"{AppContext.BaseDirectory}\\transponders.xml");
-                Console.WriteLine($"DVB-C tuners found: {tunersList.Count}");
-                
-                
-                MeasureStuffing(tunersList, DVBTransponders, AppContext.BaseDirectory.ToString());
-            }
-            else
-            {
-                Environment.Exit(ERROR_BAD_UNIT);
-            }
-            Console.WriteLine("Press any key to exit");
-            Console.ReadLine();
+            List<DVBMux> DVBMuxes = ParseConfig($"{AppContext.BaseDirectory}\\muxes.xml");
+            MeasureStuffing(DVBMuxes);
         }
 
-        static async void MeasureStuffing(Dictionary<int, bool> tuners, List<DVBTransponder> transponders, string tmpFolder)
+        static void MeasureStuffing(List<DVBMux> muxes)
         {
-            var stopwatch = Stopwatch.StartNew();
-            
-            // temp vars
-            int currentTuner = 0;
-            int currentTrasponder = 0;
-            Dictionary<int, Task> TaskDict = new Dictionary<int, Task>();
             List<Task> TaskList = new List<Task>();
-            Task[] TaskArr;
-            while (true)
+            for(int i = 0; i < 3; i++)
             {
-                foreach (KeyValuePair<int, bool> kvp in tuners)
+                Console.WriteLine(muxes[i].Address);
+                TaskList.Add(Task.Run(() => RunMeasure(muxes[i])));
+                
+                while(TaskList[i].Status != TaskStatus.Running)
                 {
-                    if (kvp.Value == false)
-                    {
-                        currentTuner = kvp.Key;
-                        tuners[kvp.Key] = true;
-
-                        string tmpFileName = $"{tmpFolder}\\TS{transponders[currentTrasponder].TransponderNumber}.tmp";
-                        Console.WriteLine($"Begin measure ts{transponders[currentTrasponder].TransponderNumber} at tuner #{currentTuner}...");
-
-                         Task task = Task.Run(() => RunMeasure(currentTuner, transponders[currentTrasponder], tmpFileName));
-                         //await Task.Run(() => RunMeasure(currentTuner, transponders[currentTrasponder], tmpFileName));
-                        //currentTrasponder++;
-                        //tuners[kvp.Key] = false;
-                        //if (currentTrasponder == transponders.Count) currentTrasponder = 0;
-                        //TaskDict.Add(kvp.Key, task);
-                        TaskList.Add(task);
-                        TaskArr = TaskList.ToArray();
-                        //List<Task<int>> Tasks = TaskDict 
-
-                        //Task FinishedTask = await Task.WaitAny(TaskArr);
-                        /*
-                        foreach(KeyValuePair<int, Task> taskKvp in TaskList)
-                        {
-                            if(taskKvp.Value == Task.CompletedTask)
-                            {
-                                currentTrasponder++;
-                                tuners[kvp.Key] = false;
-                                if (currentTrasponder == transponders.Count) currentTrasponder = 0;
-                                Console.WriteLine($"task {taskKvp.Value.Id} complete");
-                            }
-                            
-                        }
-                        */
-                    }
+                    Thread.Sleep(100);
                 }
             }
+                Task.WaitAll(TaskList.ToArray());
         }
 
         static void StoreToDatabase(int tsNum, DateTime timeStamp, int stuffBitrate)
@@ -113,97 +62,54 @@ namespace getStuff
             }
         }
 
-        static void RunMeasure(int tuner, DVBTransponder transponder, string tempFile)
+        static void OutputHandler(object sendingProcess, DataReceivedEventArgs outLine)
         {
-            Process measureProc = new Process();
+            if (outLine.Data.Length > 0)
+            {
+                Process sendProc = (Process)sendingProcess;
+                string arguments = sendProc.StartInfo.Arguments;
+                Regex argumentRegex = new Regex(@"--set-label-normal [\d]{1,}");
+                MatchCollection argumentsCollection = argumentRegex.Matches(arguments);
+                string tsNumberString = String.Empty;
+                int tsNumber = 0;
+                int bitrate = -1;
+                string tsDuckOutput = outLine.Data;
+                Regex OutputRegex = new Regex(@"bitrate: [\d]{0,}[\,]{0,}[\d]{0,}[\,]{0,}[\d]{0,}");
+                MatchCollection OutputCollection = OutputRegex.Matches(tsDuckOutput);
+                
+                if (OutputCollection.Count > 0 && argumentsCollection.Count > 0)
+                {
+                    tsNumberString = Regex.Replace(argumentsCollection[0].Value, "--set-label-normal ", String.Empty);
+                    int.TryParse(tsNumberString, out tsNumber);
+                    DateTime timeStamp = DateTime.UtcNow;
+                    string bitrateIteration1 = Regex.Replace(OutputCollection[0].Value, "bitrate: ", String.Empty);
+                    string bitrateIteration2 = Regex.Replace(bitrateIteration1, ",", String.Empty);
+                    int.TryParse(bitrateIteration2, out bitrate);
+                    //Console.WriteLine($"time: {timeStamp}, ts{tsNumber}, bitrate: {bitrate}");
+                    StoreToDatabase(tsNumber, timeStamp, bitrate);
+                }
+            }
+        }
+
+        static  void RunMeasure(DVBMux mux)
+        {
+            Console.WriteLine($"Begin measure ts{mux.TransponderNumber} at address {mux.Address}...");
+            Process measureProc = new();
+
             measureProc.StartInfo.FileName = "tsp";
-            //measureProc.StartInfo.Arguments = $"-I dvb -d :{tuner} --bandwidth 8 --delivery-system DVB-C --frequency {transponder.Frequency} --modulation {transponder.Modulation}-QAM -P skip 500 -P until -s 1 -P analyze --normalized -o {tempFile} -O drop";
-            measureProc.StartInfo.Arguments = $"--realtime -v -t -I ip {} -P bitrate_monitor -p 1 --pid 8191 -O drop";
+            measureProc.StartInfo.Arguments = $"--realtime -v -t -I ip {mux.Address}:{mux.Port} -P bitrate_monitor -p 1 -t 1 --pid 8191 --set-label-normal {mux.TransponderNumber} -O drop";
             measureProc.StartInfo.UseShellExecute = false;
             measureProc.StartInfo.RedirectStandardOutput = true;
+            measureProc.StartInfo.RedirectStandardError = true;
+            measureProc.OutputDataReceived += new DataReceivedEventHandler(OutputHandler);
+            measureProc.ErrorDataReceived += new DataReceivedEventHandler(OutputHandler);
             measureProc.Start();
-            while (!measureProc.StandardOutput.EndOfStream)
-            {
-                Console.WriteLine(measureProc.StandardOutput.ReadLine());
-            }
-            try
-            {
-                DateTime timeStamp = DateTime.UtcNow;
-                string stuffingLine = String.Empty;
-                string stuffingBitrateLine = String.Empty;
-                int bitrate = -1;
-                using (StreamReader tmpReader = new StreamReader(tempFile))
-                {
-                    List<string> tmpFileContent = new List<string>();
-
-                    while (tmpReader.Peek() >= 0)
-                    {
-                        tmpFileContent.Add(tmpReader.ReadLine());
-                    }
-
-                    foreach (string line in tmpFileContent)
-                    {
-                        Regex tmpRegex = new Regex(@":pid=8191:");
-                        MatchCollection pidMatches = tmpRegex.Matches(line);
-                        if (pidMatches.Count > 0)
-                        {
-                            stuffingLine = line;
-                        }
-                    }
-
-                    if (stuffingLine.Length > 0)
-                    {
-                        Regex pidRegex = new Regex(@"bitrate=[\d]{1,}");
-                        MatchCollection pidMatchCollection = pidRegex.Matches(stuffingLine);
-                        stuffingBitrateLine = Regex.Replace(pidMatchCollection[0].Value, "bitrate=", String.Empty);
-                        int.TryParse(stuffingBitrateLine, out bitrate);
-
-                    }
-                }
-                if (File.Exists(tempFile))
-                {
-                    File.Delete(tempFile);
-                }
-                Console.WriteLine($"date:{timeStamp}, bitrate:{bitrate}");
-                if (bitrate >= 0)
-                {
-                    StoreToDatabase(transponder.TransponderNumber, timeStamp, bitrate);
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"{tempFile} not found");
-                Console.WriteLine(e.Message);
-            }
-            //Task.WaitAll();
-            Console.WriteLine($"Measure of ts{transponder.TransponderNumber} complete");
-        }
-        static Dictionary<int, bool> GetDevicesList()
-        {
-            Process devlist = new Process();
-            devlist.StartInfo.FileName = "tslsdvb";
-            devlist.StartInfo.UseShellExecute = false;
-            devlist.StartInfo.RedirectStandardOutput = true;
-            Dictionary<int, bool> devicesList = new Dictionary<int, bool>();
-            devlist.Start();
-            while (!devlist.StandardOutput.EndOfStream)
-            {
-                string currentStr = devlist.StandardOutput.ReadLine();
-                Regex regex = new Regex(@"DVB-C", RegexOptions.IgnoreCase);
-                Match tunersMatch = regex.Match(currentStr);
-                if (tunersMatch.Success)
-                {
-                    Regex getTunerNumRegex = new Regex(@"^[\d]{1,}");
-                    MatchCollection tunersMatchCollection = getTunerNumRegex.Matches(currentStr);
-                    int tunerNumber;
-                    int.TryParse(tunersMatchCollection[0].Value, out tunerNumber);
-                    devicesList.Add(tunerNumber, false);
-                }
-            }
-            return devicesList;
+            measureProc.BeginOutputReadLine();
+            measureProc.BeginErrorReadLine();
+            measureProc.WaitForExit();
         }
 
-        static List<DVBTransponder> ParseConfig(string path)
+        static List<DVBMux> ParseConfig(string path)
         {
             string xmlString = string.Empty;
             try
@@ -218,7 +124,7 @@ namespace getStuff
                 Console.WriteLine("Config not found");
                 Console.WriteLine(e.Message);
             }
-            List<DVBTransponder> transponders = new List<DVBTransponder>();
+            List<DVBMux> muxes = new List<DVBMux>();
             XmlDocument configFile = new XmlDocument();
             configFile.LoadXml(xmlString);
             XmlElement xRoot = configFile.DocumentElement;
@@ -227,30 +133,30 @@ namespace getStuff
                 if(xNode.Attributes.Count > 0)
                 {
                     int num;
-                    int freq;
-                    int qam;
+                    int port;
                     
-                    if(int.TryParse(xNode.GetAttribute("num"), out num) && int.TryParse(xNode.GetAttribute("freq"), out freq) && int.TryParse(xNode.GetAttribute("qam"), out qam))
+                    if(int.TryParse(xNode.GetAttribute("num"), out num) && int.TryParse(xNode.GetAttribute("port"), out port))
                     {
-                        transponders.Add(new DVBTransponder(num, freq, qam));
+                        muxes.Add(new DVBMux(num, xNode.GetAttribute("ip"), port));
                     }
                 }
             }
-            return transponders;
+            
+            return muxes;
         }
     }
 
-    public class DVBTransponder
+    public class DVBMux
     {
-        public DVBTransponder(int tsNum, int freq, int qam)
+        public DVBMux(int tsNum, string address, int port)
         {
             TransponderNumber = tsNum;
-            Frequency = freq;
-            Modulation = qam;
+            Address = address;
+            Port = port;
         }
         private int _transponderNumber;
-        private int _frequency;
-        private int _modultaion;
+        private string _address;
+        private int _port;
         public int TransponderNumber 
         { 
             get 
@@ -262,26 +168,26 @@ namespace getStuff
                 _transponderNumber = value; 
             } 
         }
-        public int Frequency
+        public string Address
         {
             get
             {
-                return _frequency;
+                return _address;
             }
             set
             {
-                _frequency = value;
+                _address = value;
             }
         }
-        public int Modulation
+        public int Port
         {
             get
             {
-                return _modultaion;
+                return _port;
             }
             set
             {
-                _modultaion = value;
+                _port = value;
             }
         }
     }

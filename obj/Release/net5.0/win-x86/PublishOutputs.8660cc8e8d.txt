@@ -1,5 +1,5 @@
 D:\Repos\getStuff\getStuff\bin\Release\net5.0\publish\getStuff.pdb
-D:\Repos\getStuff\getStuff\bin\Release\net5.0\publish\transponders.xml
+D:\Repos\getStuff\getStuff\bin\Release\net5.0\publish\muxes.xml
 D:\Repos\getStuff\getStuff\bin\Release\net5.0\publish\clrcompression.dll
 D:\Repos\getStuff\getStuff\bin\Release\net5.0\publish\clrjit.dll
 D:\Repos\getStuff\getStuff\bin\Release\net5.0\publish\coreclr.dll
