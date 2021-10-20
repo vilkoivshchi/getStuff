@@ -12,12 +12,14 @@ namespace getStuff
 {
     class Program
     {
-        private static string Host = String.Empty;
-        private static string User = String.Empty;
-        private static string DBname = String.Empty;
-        private static string Password = String.Empty;
-        private static string Port = String.Empty;
-        private static string interfaceIp = String.Empty;
+        private static string _dbHost = String.Empty;
+        private static string _dbUser = String.Empty;
+        private static string _dbName = String.Empty;
+        private static string _dbPassword = String.Empty;
+        private static string _dbPort = String.Empty;
+        private static string _networkInterface = String.Empty;
+        private static List<string> _networkInterfaces = new();
+
         static void Main(string[] args)
         {
             List<DVBMux> DVBMuxes = ParseConfig($"{AppContext.BaseDirectory}\\muxes.xml");
@@ -43,10 +45,10 @@ namespace getStuff
 
         static void StoreToDatabase(int tsNum, DateTime timeStamp, int stuffBitrate)
         {
-            string connString = $"Server={Host};Username={User};Database={DBname};Port={Port};Password={Password}";
+            string connString = $"Server={_dbHost};Username={_dbUser};Database={_dbName};Port={_dbPort};Password={_dbPassword}";
             using (var conn = new NpgsqlConnection(connString))
             {
-                Console.Out.WriteLine($"Opening connection to {Host}");
+                Console.Out.WriteLine($"Opening connection to {_dbHost}");
                 conn.Open();
                 using (var command = new NpgsqlCommand($"CREATE TABLE IF NOT EXISTS TS{tsNum}(time TIMESTAMP WITHOUT TIME ZONE PRIMARY KEY, bitrate INTEGER)", conn))
                 {
@@ -71,7 +73,7 @@ namespace getStuff
             {
                 Process sendProc = (Process)sendingProcess;
                 string arguments = sendProc.StartInfo.Arguments;
-                Regex argumentRegex = new Regex(@"--set-label-normal [\d]{1,}");
+                Regex argumentRegex = new Regex(@"--tag [\d]{1,}");
                 MatchCollection argumentsCollection = argumentRegex.Matches(arguments);
                 string tsNumberString = String.Empty;
                 int tsNumber = 0;
@@ -82,7 +84,7 @@ namespace getStuff
                 
                 if (OutputCollection.Count > 0 && argumentsCollection.Count > 0)
                 {
-                    tsNumberString = Regex.Replace(argumentsCollection[0].Value, "--set-label-normal ", String.Empty);
+                    tsNumberString = Regex.Replace(argumentsCollection[0].Value, "--tag ", String.Empty);
                     int.TryParse(tsNumberString, out tsNumber);
                     DateTime timeStamp = DateTime.UtcNow;
                     string bitrateIteration1 = Regex.Replace(OutputCollection[0].Value, "bitrate: ", String.Empty);
@@ -94,13 +96,15 @@ namespace getStuff
             }
         }
 
+       
+
         static  void RunMeasure(DVBMux mux)
         {
-            Console.WriteLine($"Begin measure ts{mux.TransponderNumber} at address {mux.Address}...");
+            Console.WriteLine($"Begin measure ts{mux.TransponderNumber} at address {mux.Address}:{mux.Port}...");
             Process measureProc = new();
 
             measureProc.StartInfo.FileName = "tsp";
-            measureProc.StartInfo.Arguments = $"--realtime -v -t -I ip {mux.Address}:{mux.Port} -l {interfaceIp} -P bitrate_monitor -p 1 -t 1 --pid 8191 --set-label-normal {mux.TransponderNumber} -O drop";
+            measureProc.StartInfo.Arguments = $"--realtime -v -t -I ip {mux.Address}:{mux.Port} -l {_networkInterface} -P bitrate_monitor -p 1 -t 1 --pid 8191 --tag {mux.TransponderNumber} -O drop";
             measureProc.StartInfo.UseShellExecute = false;
             measureProc.StartInfo.RedirectStandardOutput = true;
             measureProc.StartInfo.RedirectStandardError = true;
@@ -131,6 +135,7 @@ namespace getStuff
             XmlDocument configFile = new XmlDocument();
             configFile.LoadXml(xmlString);
             XmlElement xRoot = configFile.DocumentElement;
+            
             foreach (XmlElement xNodes in xRoot)
             {
                 foreach (XmlElement xElement in xNodes) 
@@ -149,16 +154,17 @@ namespace getStuff
                         
                         if (xElement.Name == "interface")
                         {
-                            interfaceIp = xElement.GetAttribute("address");
+                            _networkInterface = xElement.GetAttribute("address");
+                            _networkInterfaces.Add(_networkInterface);
                         }
 
                         if (xElement.Name == "database")
                         {
-                            Host = xElement.GetAttribute("host");
-                            User = xElement.GetAttribute("user");
-                            DBname = xElement.GetAttribute("dbname");
-                            Password = xElement.GetAttribute("password");
-                            Port = xElement.GetAttribute("port");
+                            _dbHost = xElement.GetAttribute("host");
+                            _dbUser = xElement.GetAttribute("user");
+                            _dbName = xElement.GetAttribute("dbname");
+                            _dbPassword = xElement.GetAttribute("password");
+                            _dbPort = xElement.GetAttribute("port");
                         }
                     }
                 }
