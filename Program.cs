@@ -19,6 +19,7 @@ namespace getStuff
         private static string _dbPort = String.Empty;
         private static string _networkInterface = String.Empty;
         private static List<string> _networkInterfaces = new();
+        private static string _storePeriod = String.Empty;
 
         static void Main(string[] args)
         {
@@ -43,7 +44,7 @@ namespace getStuff
             Task.WaitAll(TaskList.ToArray());
         }
 
-        static void StoreToDatabase(int tsNum, DateTime timeStamp, int stuffBitrate)
+        static void StoreBitrateToDatabase(int tsNum, int stuffBitrate)
         {
             string connString = $"Server={_dbHost};Username={_dbUser};Database={_dbName};Port={_dbPort};Password={_dbPassword}";
             using (var conn = new NpgsqlConnection(connString))
@@ -53,14 +54,47 @@ namespace getStuff
                 using (var command = new NpgsqlCommand($"CREATE TABLE IF NOT EXISTS TS{tsNum}(time TIMESTAMP WITHOUT TIME ZONE PRIMARY KEY, bitrate INTEGER)", conn))
                 {
                     command.ExecuteNonQuery();
+                }
+                using (var command = new NpgsqlCommand($"INSERT INTO TS{tsNum} (time, bitrate) VALUES ((now() at time zone 'utc'), @q1)", conn))
+                {
+                    command.Parameters.AddWithValue("q1", stuffBitrate);
+                    Console.Out.WriteLine(String.Format($"Write for ts{tsNum} complete. Number of rows inserted={command.ExecuteNonQuery()}"));
+                }
+                
+                if(_storePeriod != String.Empty)
+                {
+                    using (var command = new NpgsqlCommand($"DELETE FROM TS{tsNum} WHERE time < ((now() at time zone 'utc') - interval @q1)", conn))
+                    {
+                        command.Parameters.AddWithValue("q1", _storePeriod);
+                        //Console.Out.WriteLine(String.Format($"Cleaning table ts{tsNum} complete. Number of rows deleted={command.ExecuteNonQuery()}"));
+                    }
+                }
+                
+                conn.Close();
+            }
+        }
+
+        static void StoreErrorsToDatabase(int ts, int pid, int errorCount)
+        {
+            string connString = $"Server={_dbHost};Username={_dbUser};Database={_dbName};Port={_dbPort};Password={_dbPassword}";
+            string tableName = "cc_errors";
+            using (var conn = new NpgsqlConnection(connString))
+            {
+                Console.Out.WriteLine($"Opening connection to {_dbHost}");
+                conn.Open();
+                using (var command = new NpgsqlCommand($"CREATE TABLE IF NOT EXISTS {tableName}(time TIMESTAMP WITHOUT TIME ZONE PRIMARY KEY, ts INTEGER, pid INTEGER, errorcount INTEGER)", conn))
+                {
+                    command.ExecuteNonQuery();
                     //Console.Out.WriteLine("Finished creating table");
                 }
-                using (var command = new NpgsqlCommand($"INSERT INTO TS{tsNum} (time, bitrate) VALUES (@n1, @q1)", conn))
+                using (var command = new NpgsqlCommand($"INSERT INTO {tableName} (time, ts, pid, errorcount) VALUES ((now() at time zone 'utc'), @n1, @q1, @v1)", conn))
                 {
-                    command.Parameters.AddWithValue("n1", NpgsqlTypes.NpgsqlDbType.Timestamp, timeStamp);
-                    command.Parameters.AddWithValue("q1", stuffBitrate);
-
-                    Console.Out.WriteLine(String.Format($"Write for ts{tsNum} complete. Number of rows inserted={command.ExecuteNonQuery()}"));
+                    //command.Parameters.AddWithValue("n1", NpgsqlTypes.NpgsqlDbType.Timestamp, timeStamp);
+                    command.Parameters.AddWithValue("n1", ts);
+                    command.Parameters.AddWithValue("q1", pid);
+                    command.Parameters.AddWithValue("v1", errorCount);
+                    
+                    Console.Out.WriteLine(String.Format($"Write for cc_errors complete. Number of rows inserted={command.ExecuteNonQuery()}"));
                 }
                 conn.Close();
             }
@@ -82,16 +116,43 @@ namespace getStuff
                 Regex OutputRegex = new Regex(@"bitrate: [\d]{0,}[\,]{0,}[\d]{0,}[\,]{0,}[\d]{0,}");
                 MatchCollection OutputCollection = OutputRegex.Matches(tsDuckOutput);
                 
-                if (OutputCollection.Count > 0 && argumentsCollection.Count > 0)
+                Regex CCerrorRegex = new Regex(@"(continuity: )|(PID: 0x[\w]{1,})|(missing [\d]{1,})");
+                MatchCollection CCerrorCollection = CCerrorRegex.Matches(tsDuckOutput);
+                
+                if(CCerrorCollection.Count == 3)
+                {
+                    //Console.WriteLine($"{CCerrorCollection[1]}, {CCerrorCollection[2]}");
+                    int ccErrorPid = -1;
+                    int ccErrorCount = -1;
+                    //int.TryParse(Regex.Replace(CCerrorCollection[1].Value, "PID: ", String.Empty), out ccErrorPid);
+                    int.TryParse(Regex.Replace(CCerrorCollection[2].Value, "missing ", String.Empty), out ccErrorCount);
+                    ccErrorPid = Convert.ToInt32(Regex.Replace(CCerrorCollection[1].Value, "PID: ", String.Empty), 16);
+                    tsNumberString = Regex.Replace(argumentsCollection[0].Value, "--tag ", String.Empty);
+                    int.TryParse(tsNumberString, out tsNumber);
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($" PID: {ccErrorPid}, count: {ccErrorCount}");
+                    Console.ResetColor();
+
+                    if (ccErrorCount > 0 && ccErrorPid > 0)
+                    {
+                       Task.Run(() => StoreErrorsToDatabase(tsNumber, ccErrorPid, ccErrorCount));
+                    }
+                    
+                }
+                
+                else if (OutputCollection.Count > 0 && argumentsCollection.Count > 0)
                 {
                     tsNumberString = Regex.Replace(argumentsCollection[0].Value, "--tag ", String.Empty);
                     int.TryParse(tsNumberString, out tsNumber);
-                    DateTime timeStamp = DateTime.UtcNow;
                     string bitrateIteration1 = Regex.Replace(OutputCollection[0].Value, "bitrate: ", String.Empty);
                     string bitrateIteration2 = Regex.Replace(bitrateIteration1, ",", String.Empty);
                     int.TryParse(bitrateIteration2, out bitrate);
                     //Console.WriteLine($"time: {timeStamp}, ts{tsNumber}, bitrate: {bitrate}");
-                    StoreToDatabase(tsNumber, timeStamp, bitrate);
+                    Task.Run(() => StoreBitrateToDatabase(tsNumber, bitrate));
+                }
+                else
+                {
+                    Console.WriteLine(tsDuckOutput);
                 }
             }
         }
@@ -104,7 +165,7 @@ namespace getStuff
             Process measureProc = new();
 
             measureProc.StartInfo.FileName = "tsp";
-            measureProc.StartInfo.Arguments = $"--realtime -v -t -I ip {mux.Address}:{mux.Port} -l {_networkInterface} -P bitrate_monitor -p 1 -t 1 --pid 8191 --tag {mux.TransponderNumber} -O drop";
+            measureProc.StartInfo.Arguments = $"--realtime -v -t -I ip {mux.Address}:{mux.Port} -l {_networkInterface} -P continuity -P bitrate_monitor -p 1 -t 1 --pid 8191 --tag {mux.TransponderNumber} -O drop";
             measureProc.StartInfo.UseShellExecute = false;
             measureProc.StartInfo.RedirectStandardOutput = true;
             measureProc.StartInfo.RedirectStandardError = true;
@@ -165,6 +226,7 @@ namespace getStuff
                             _dbName = xElement.GetAttribute("dbname");
                             _dbPassword = xElement.GetAttribute("password");
                             _dbPort = xElement.GetAttribute("port");
+                            _storePeriod = xElement.GetAttribute("storeperiod");
                         }
                     }
                 }
