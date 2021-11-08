@@ -8,6 +8,6 @@
 		<interface address="192.168.10.44" />
 	</interfaces>
 	<databases>
-		<database host="10.253.55.21" user="stuffing" dbname="stuffing_db" password="13691505" port="5432" storeperiod="7 days"/>
+		<database host="10.253.55.21" user="stuffing" dbname="stuffing_db" password="13691505" port="5432" storeperiod="3 days"/>
 	</databases>
 </config>

@@ -63,10 +63,15 @@ namespace getStuff
                 
                 if(_storePeriod != String.Empty)
                 {
-                    using (var command = new NpgsqlCommand($"DELETE FROM TS{tsNum} WHERE time < ((now() at time zone 'utc') - interval @q1)", conn))
+                    
+                    using (var command = new NpgsqlCommand($"DELETE FROM TS{tsNum} WHERE time < ((now() at time zone 'utc') - interval '{_storePeriod}')", conn))
                     {
-                        command.Parameters.AddWithValue("q1", _storePeriod);
-                        //Console.Out.WriteLine(String.Format($"Cleaning table ts{tsNum} complete. Number of rows deleted={command.ExecuteNonQuery()}"));
+                        //command.Parameters.AddWithValue("p1", _storePeriod);
+                        //command.Prepare();
+                        //command.ExecuteNonQuery();
+                        //Console.ForegroundColor = ConsoleColor.Blue;
+                        Console.Out.WriteLine(String.Format($"Cleaning table ts{tsNum} complete. Number of rows deleted={command.ExecuteNonQuery()}"));
+                        //Console.ResetColor();
                     }
                 }
                 
