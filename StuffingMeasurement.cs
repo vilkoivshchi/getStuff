@@ -76,19 +76,18 @@ namespace getStuff
             {
                 Console.Out.WriteLine($"Opening connection to {_parsedConfig.DbHost}");
                 conn.Open();
-                using (var command = new NpgsqlCommand($"CREATE TABLE IF NOT EXISTS {tableName}(time TIMESTAMP WITHOUT TIME ZONE PRIMARY KEY, ts INTEGER, pid INTEGER, errorcount INTEGER)", conn))
+                using (var command = new NpgsqlCommand($"CREATE TABLE IF NOT EXISTS {tableName} (time TIMESTAMP WITHOUT TIME ZONE PRIMARY KEY, ts INTEGER, pid INTEGER, errorcount INTEGER)", conn))
                 {
-                    command.ExecuteNonQuery();
+                   command.ExecuteNonQuery();
                     //Console.Out.WriteLine("Finished creating table");
                 }
                 using (var command = new NpgsqlCommand($"INSERT INTO {tableName} (time, ts, pid, errorcount) VALUES ((now() at time zone 'utc'), @n1, @q1, @v1)", conn))
                 {
-                    //command.Parameters.AddWithValue("n1", NpgsqlTypes.NpgsqlDbType.Timestamp, timeStamp);
                     command.Parameters.AddWithValue("n1", ts);
                     command.Parameters.AddWithValue("q1", pid);
                     command.Parameters.AddWithValue("v1", errorCount);
 
-                    Console.Out.WriteLine(String.Format($"Write for cc_errors complete. Number of rows inserted={command.ExecuteNonQuery()}"));
+                    Console.Out.WriteLine(String.Format($"Write for {tableName} complete. Number of rows inserted={command.ExecuteNonQuery()}"));
                 }
                 conn.Close();
             }
@@ -153,11 +152,11 @@ namespace getStuff
 
         internal void RunMeasure(DVBMux mux)
         {
-            Console.WriteLine($"Begin measure ts{mux.TransponderNumber} at address {mux.Address}:{mux.Port}...");
+            Console.WriteLine($"Begin measure ts{mux.TransponderNumber} at address {mux.MulticastAddress}:{mux.Port}...");
             Process measureProc = new();
 
             measureProc.StartInfo.FileName = "tsp";
-            measureProc.StartInfo.Arguments = $"--realtime -v -t -I ip {mux.Address}:{mux.Port} -l {_parsedConfig.NetworkInterface} -P continuity -P bitrate_monitor -p 1 -t 1 --pid 8191 --tag {mux.TransponderNumber} -O drop";
+            measureProc.StartInfo.Arguments = $"--realtime -v -t -I ip {mux.MulticastAddress}:{mux.Port} -l {mux.InterfaceAddress} -P continuity -P bitrate_monitor -p 1 -t 1 --pid 8191 --tag {mux.TransponderNumber} -O drop";
             measureProc.StartInfo.UseShellExecute = false;
             measureProc.StartInfo.RedirectStandardOutput = true;
             measureProc.StartInfo.RedirectStandardError = true;

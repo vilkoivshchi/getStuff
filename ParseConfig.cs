@@ -11,7 +11,7 @@ namespace getStuff
         {
             _filepath = path;
         }
-
+        private const int ERROR_FILE_NOT_FOUND = 0x2;
         private string _filepath = string.Empty;
         internal string DbHost = string.Empty;
         internal string DbUser = string.Empty;
@@ -27,55 +27,60 @@ namespace getStuff
 
         internal void ReadConfig()
         {
-            try
-            {
+            if(File.Exists(_filepath))
                 using (StreamReader reader = new StreamReader(_filepath))
                 {
                     _xmlString = reader.ReadToEnd();
                 }
 
-            }
-            catch (Exception e)
+            else
             {
-                Console.WriteLine("Config not found");
-                Console.WriteLine(e.Message);
+                //throw new FileNotFoundException($"Config {_filepath} not found!");
+                Console.WriteLine($"Config {_filepath} not found!");
+                Environment.Exit(ERROR_FILE_NOT_FOUND);
             }
 
-            //List<DVBMux> muxes = new List<DVBMux>();
             XmlDocument configFile = new XmlDocument();
             configFile.LoadXml(_xmlString);
             XmlElement xRoot = configFile.DocumentElement;
 
             foreach (XmlElement xNodes in xRoot)
             {
-                foreach (XmlElement xElement in xNodes)
+                foreach (XmlElement xInterface in xNodes)
                 {
-                    if (xElement.Attributes.Count > 0)
+                    if (xInterface.Attributes.Count > 0)
                     {
-                        int num;
-                        int port;
-                        if (xElement.Name == "mux")
+                        
+                        if (xInterface.Name == "interface")
                         {
-                            if (int.TryParse(xElement.GetAttribute("num"), out num) && int.TryParse(xElement.GetAttribute("port"), out port))
+                            NetworkInterface = xInterface.GetAttribute("address");
+                            
+                            foreach(XmlElement xInterfaceChilds in xInterface)
                             {
-                                muxes.Add(new DVBMux(num, xElement.GetAttribute("ip"), port));
+                                foreach(XmlElement xMux in xInterfaceChilds)
+                                {
+                                    int tsNum;
+                                    int port;
+                                    if (xMux.Name == "mux")
+                                    {
+                                        if (int.TryParse(xMux.GetAttribute("num"), out tsNum) && int.TryParse(xMux.GetAttribute("port"), out port))
+                                        {
+                                            muxes.Add(new DVBMux(tsNum, xMux.GetAttribute("ip"), port, NetworkInterface));
+                                        }
+                                    }
+                                }
                             }
+                            //NetworkInterfaces.Add(NetworkInterface);
                         }
 
-                        if (xElement.Name == "interface")
+                        if (xInterface.Name == "database")
                         {
-                            NetworkInterface = xElement.GetAttribute("address");
-                            NetworkInterfaces.Add(NetworkInterface);
-                        }
-
-                        if (xElement.Name == "database")
-                        {
-                            DbHost = xElement.GetAttribute("host");
-                            DbUser = xElement.GetAttribute("user");
-                            DbName = xElement.GetAttribute("dbname");
-                            DbPassword = xElement.GetAttribute("password");
-                            DbPort = xElement.GetAttribute("port");
-                            StorePeriod = xElement.GetAttribute("storeperiod");
+                            DbHost = xInterface.GetAttribute("host");
+                            DbUser = xInterface.GetAttribute("user");
+                            DbName = xInterface.GetAttribute("dbname");
+                            DbPassword = xInterface.GetAttribute("password");
+                            DbPort = xInterface.GetAttribute("port");
+                            StorePeriod = xInterface.GetAttribute("storeperiod");
                         }
                     }
                 }
