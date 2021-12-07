@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+
+	<interfaces>
+		<interface address="192.168.10.44">
+			<muxes>
+				<mux num="34" ip="238.1.1.34" port="41024" dbnumber="1"/>
+				<mux num="35" ip="238.1.1.35" port="41024" dbnumber="1"/>
+			</muxes>
+		</interface>
+		<interface address="192.168.1.222" >
+			<muxes>
+				<mux num="1" ip="238.1.1.1" port="41024" dbnumber="1"/>
+			</muxes>
+		</interface>
+	</interfaces>
+	<databases>
+		<database number="1" host="10.253.55.21" user="stuffing" dbname="stuffing_db" password="13691505" port="5432" storeperiod="3 days"/>
+	</databases>
+</config>

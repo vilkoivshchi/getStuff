@@ -1,5 +1,4 @@
 D:\repos\getStuff\getStuff\bin\Release\net5.0\win-x86\getStuff.exe
-D:\repos\getStuff\getStuff\bin\Release\net5.0\win-x86\transponders.xml
 D:\repos\getStuff\getStuff\bin\Release\net5.0\win-x86\getStuff.deps.json
 D:\repos\getStuff\getStuff\bin\Release\net5.0\win-x86\getStuff.runtimeconfig.json
 D:\repos\getStuff\getStuff\bin\Release\net5.0\win-x86\getStuff.runtimeconfig.dev.json
@@ -236,3 +235,4 @@ D:\repos\getStuff\getStuff\obj\Release\net5.0\win-x86\ref\getStuff.dll
 D:\repos\getStuff\getStuff\obj\Release\net5.0\win-x86\getStuff.pdb
 D:\repos\getStuff\getStuff\obj\Release\net5.0\win-x86\getStuff.genruntimeconfig.cache
 D:\repos\getStuff\getStuff\bin\Release\net5.0\win-x86\Npgsql.dll
+D:\Repos\getStuff\getStuff\bin\Release\net5.0\win-x86\muxes.xml
