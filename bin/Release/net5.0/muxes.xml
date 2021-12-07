@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <config>
 	<muxes>
-		<mux num="34" ip="238.1.1.34" port="41024" />
-		<mux num="35" ip="238.1.1.35" port="41024" />
+		<mux num="34" ip="233.100.1.34" port="41024" />
+		<mux num="35" ip="233.100.1.35" port="41024" />
 	</muxes>
 	<interfaces>
 		<interface address="192.168.10.44" />
 	</interfaces>
 	<databases>
-		<database host="10.253.55.21" user="stuffing" dbname="stuffing_db" password="13691505" port="5432" storeperiod="3 days"/>
+		<database host="127.0.0.1" user="stuffing" dbname="stuffing_db" password="myPassword" port="5432" storeperiod="3 days"/>
 	</databases>
 </config>

@@ -3,17 +3,20 @@ namespace getStuff
 {
     internal class DVBMux
     {
-        public DVBMux(int tsNum, string multicastAddress, int port, string interfaceAddress)
+        public DVBMux(int tsNum, string multicastAddress, int multicasPort, string interfaceAddress, int dbNumber)
         {
             TransponderNumber = tsNum;
             MulticastAddress = multicastAddress;
-            Port = port;
+            MulticastPort = multicasPort;
             InterfaceAddress = interfaceAddress;
+            DbNumber = dbNumber;
         }
         private int _transponderNumber;
         private string _address;
         private int _port;
         private string _interfaceAddress;
+        private int _dbNumber;
+
         public int TransponderNumber
         {
             get
@@ -36,7 +39,7 @@ namespace getStuff
                 _address = value;
             }
         }
-        public int Port
+        public int MulticastPort
         {
             get
             {
@@ -56,6 +59,17 @@ namespace getStuff
             set
             {
                 _interfaceAddress = value;
+            }
+        }
+        public int DbNumber
+        {
+            get
+            {
+                return _dbNumber;
+            }
+            set
+            {
+                _dbNumber = value;
             }
         }
     }

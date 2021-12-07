@@ -55,12 +55,7 @@ namespace getStuff
 
                     using (var command = new NpgsqlCommand($"DELETE FROM TS{tsNum} WHERE time < ((now() at time zone 'utc') - interval '{_parsedConfig.StorePeriod}')", conn))
                     {
-                        //command.Parameters.AddWithValue("p1", _storePeriod);
-                        //command.Prepare();
-                        //command.ExecuteNonQuery();
-                        //Console.ForegroundColor = ConsoleColor.Blue;
                         Console.Out.WriteLine(String.Format($"Cleaning table ts{tsNum} complete. Number of rows deleted={command.ExecuteNonQuery()}"));
-                        //Console.ResetColor();
                     }
                 }
 
@@ -152,11 +147,11 @@ namespace getStuff
 
         internal void RunMeasure(DVBMux mux)
         {
-            Console.WriteLine($"Begin measure ts{mux.TransponderNumber} at address {mux.MulticastAddress}:{mux.Port}...");
+            Console.WriteLine($"Begin measure ts{mux.TransponderNumber} at address {mux.MulticastAddress}:{mux.MulticastPort}...");
             Process measureProc = new();
 
             measureProc.StartInfo.FileName = "tsp";
-            measureProc.StartInfo.Arguments = $"--realtime -v -t -I ip {mux.MulticastAddress}:{mux.Port} -l {mux.InterfaceAddress} -P continuity -P bitrate_monitor -p 1 -t 1 --pid 8191 --tag {mux.TransponderNumber} -O drop";
+            measureProc.StartInfo.Arguments = $"--realtime -v -t -I ip {mux.MulticastAddress}:{mux.MulticastPort} -l {mux.InterfaceAddress} -P continuity -P bitrate_monitor -p 1 -t 1 --pid 8191 --tag {mux.TransponderNumber} -O drop";
             measureProc.StartInfo.UseShellExecute = false;
             measureProc.StartInfo.RedirectStandardOutput = true;
             measureProc.StartInfo.RedirectStandardError = true;
