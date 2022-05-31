@@ -1,14 +1,22 @@
 {
   "version": 2,
-  "dgSpecHash": "o3DLATuADdt96vXmT2Tidlj0lq07kDj3a6mcz3U3sXrNNaIwrd57ZOTlugFi9gAio1yA/QfDvq1S7wow7VP0ww==",
+  "dgSpecHash": "cA/+p6q3cfjV2dznTsua9VV7bMRb/b5pkHCu1zPrhHqJEFS9518QAZSq2BCAHOnaevZqA4OoiCEhd5MD9IOAZw==",
   "success": true,
-  "projectFilePath": "D:\\Repos\\getStuff\\getStuff\\getStuff.csproj",
+  "projectFilePath": "C:\\Users\\Administrator\\source\\repos\\vilkoivshchi\\getStuff\\getStuff.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\utrom\\.nuget\\packages\\npgsql\\5.0.10\\npgsql.5.0.10.nupkg.sha512",
-    "C:\\Users\\utrom\\.nuget\\packages\\system.runtime.compilerservices.unsafe\\4.6.0\\system.runtime.compilerservices.unsafe.4.6.0.nupkg.sha512",
-    "C:\\Users\\utrom\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\5.0.9\\microsoft.netcore.app.runtime.win-x64.5.0.9.nupkg.sha512",
-    "C:\\Users\\utrom\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x64\\5.0.9\\microsoft.windowsdesktop.app.runtime.win-x64.5.0.9.nupkg.sha512",
-    "C:\\Users\\utrom\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\5.0.9\\microsoft.aspnetcore.app.runtime.win-x64.5.0.9.nupkg.sha512"
+    "C:\\Users\\Administrator\\.nuget\\packages\\microsoft.data.sqlite\\6.0.3\\microsoft.data.sqlite.6.0.3.nupkg.sha512",
+    "C:\\Users\\Administrator\\.nuget\\packages\\microsoft.data.sqlite.core\\6.0.3\\microsoft.data.sqlite.core.6.0.3.nupkg.sha512",
+    "C:\\Users\\Administrator\\.nuget\\packages\\newtonsoft.json\\13.0.1\\newtonsoft.json.13.0.1.nupkg.sha512",
+    "C:\\Users\\Administrator\\.nuget\\packages\\npgsql\\6.0.3\\npgsql.6.0.3.nupkg.sha512",
+    "C:\\Users\\Administrator\\.nuget\\packages\\sqlitepclraw.bundle_e_sqlite3\\2.0.6\\sqlitepclraw.bundle_e_sqlite3.2.0.6.nupkg.sha512",
+    "C:\\Users\\Administrator\\.nuget\\packages\\sqlitepclraw.core\\2.0.6\\sqlitepclraw.core.2.0.6.nupkg.sha512",
+    "C:\\Users\\Administrator\\.nuget\\packages\\sqlitepclraw.lib.e_sqlite3\\2.0.6\\sqlitepclraw.lib.e_sqlite3.2.0.6.nupkg.sha512",
+    "C:\\Users\\Administrator\\.nuget\\packages\\sqlitepclraw.provider.e_sqlite3\\2.0.6\\sqlitepclraw.provider.e_sqlite3.2.0.6.nupkg.sha512",
+    "C:\\Users\\Administrator\\.nuget\\packages\\system.memory\\4.5.3\\system.memory.4.5.3.nupkg.sha512",
+    "C:\\Users\\Administrator\\.nuget\\packages\\system.runtime.compilerservices.unsafe\\6.0.0\\system.runtime.compilerservices.unsafe.6.0.0.nupkg.sha512",
+    "C:\\Users\\Administrator\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\5.0.15\\microsoft.netcore.app.runtime.win-x64.5.0.15.nupkg.sha512",
+    "C:\\Users\\Administrator\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x64\\5.0.15\\microsoft.windowsdesktop.app.runtime.win-x64.5.0.15.nupkg.sha512",
+    "C:\\Users\\Administrator\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\5.0.15\\microsoft.aspnetcore.app.runtime.win-x64.5.0.15.nupkg.sha512"
   ],
   "logs": []
 }

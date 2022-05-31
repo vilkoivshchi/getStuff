@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Xml;
 
 namespace getStuff
@@ -12,7 +13,10 @@ namespace getStuff
             _filepath = path;
         }
         private const int ERROR_FILE_NOT_FOUND = 0x2;
+        private const int ERROR_BAD_ARGUMENTS = 0xA0;
         private string _filepath = string.Empty;
+        internal DbType databaseType = DbType.Sqlite;
+        internal string DbPath = string.Empty;
         internal string DbHost = string.Empty;
         internal string DbUser = string.Empty;
         internal string DbName = string.Empty;
@@ -22,7 +26,7 @@ namespace getStuff
         internal string StorePeriod = string.Empty;
         internal int DbNumber = 0;
         internal List<DVBMux> Muxes = new();
-        internal List<DbSettings> DataBases = new();
+        internal List<DatabaseSettings> DataBases = new();
 
         private string _xmlString = string.Empty;
 
@@ -76,40 +80,56 @@ namespace getStuff
 
                         if (xRootNodeChids.Name == "database")
                         {
-                            DbHost = xRootNodeChids.GetAttribute("host");
-                            DbUser = xRootNodeChids.GetAttribute("user");
-                            DbName = xRootNodeChids.GetAttribute("dbname");
-                            DbPassword = xRootNodeChids.GetAttribute("password");
-                            DbPort = xRootNodeChids.GetAttribute("port");
+                            string DbTypeString = xRootNodeChids.GetAttribute("type");
+                            switch (DbTypeString)
+                            {
+                                case "postgres":
+
+                                    DbHost = xRootNodeChids.GetAttribute("host");
+                                    DbUser = xRootNodeChids.GetAttribute("user");
+                                    DbName = xRootNodeChids.GetAttribute("dbname");
+                                    DbPassword = xRootNodeChids.GetAttribute("password");
+                                    DbPort = xRootNodeChids.GetAttribute("port");
+                                    break;
+                                case "sqlite":
+                                    DbPath = xRootNodeChids.GetAttribute("path");
+
+                                    break;
+                            }
+
                             StorePeriod = xRootNodeChids.GetAttribute("storeperiod");
+                            Regex timeSpanRegex = new Regex(@"^([\d]{1,}[\W]{0,})([\w]{1,})");
+                            Match timeSpanMatch = timeSpanRegex.Match(StorePeriod);
+                            int timeSpanInt = -1;
+                            TimeSpan timeSpan = TimeSpan.Zero;
+                            int.TryParse(timeSpanMatch.Groups[1].Value, out timeSpanInt);
+                            if (timeSpanInt == -1)
+                            {
+                                Console.WriteLine($"Errot in storeperiod for database #{DbNumber}");
+                                Environment.Exit(ERROR_BAD_ARGUMENTS);
+                            }
+                            
+                            if(timeSpanMatch.Groups[2].Value == "minute" || timeSpanMatch.Groups[2].Value == "minutes")
+                            {
+                                timeSpan = TimeSpan.FromMinutes(timeSpanInt * 1);
+                            }
+                            else if(timeSpanMatch.Groups[2].Value == "hour" || timeSpanMatch.Groups[2].Value == "hours")
+                            {
+                                timeSpan = TimeSpan.FromMinutes(timeSpanInt * 60);
+                            }
+                            else if(timeSpanMatch.Groups[2].Value == "day" || timeSpanMatch.Groups[2].Value == "days")
+                            {
+                                timeSpan = TimeSpan.FromMinutes(timeSpanInt * 60 * 24);
+                            }
+                            
                             int.TryParse(xRootNodeChids.GetAttribute("number"), out DbNumber);
                         }
-                        /*
-                        if (xRootNodeChids.Name == "databases")
-                        {
-                            foreach (XmlElement xDataBase in xRootNodeChids)
-                            {
-                                if (xDataBase.Name == "database")
-                                {
-                                    int databaseNumber = 0;
-                                    int.TryParse(xDataBase.GetAttribute("number"), out databaseNumber);
-                                    DbSettings database = new(databaseNumber,
-                                        xDataBase.GetAttribute("host"),
-                                        xDataBase.GetAttribute("port"),
-                                        xDataBase.GetAttribute("dbname"),
-                                        xDataBase.GetAttribute("user"),
-                                        xDataBase.GetAttribute("password")
-                                        );
-                                    DataBases.Add(database);
-                                }
-                            }
-                        }
-                        */
+                        
                     }
                 }
             }
             XmlNodeList xMuxesList = configFile.GetElementsByTagName("interfaces");
-
+            /*
             XmlNodeList xDataBasesList = configFile.GetElementsByTagName("database");
             for (int i = 0; i < xDataBasesList.Count; i++)
             {
@@ -122,9 +142,10 @@ namespace getStuff
                 XmlAttribute dbPasswordAttr = (XmlAttribute)dataBaseNode.Attributes.GetNamedItem("password");
                 XmlAttribute dbPortAttr = (XmlAttribute)dataBaseNode.Attributes.GetNamedItem("port");
                 XmlAttribute dbStorePeriod = (XmlAttribute)dataBaseNode.Attributes.GetNamedItem("storeperiod");
-                DbSettings database = new(dbNumAttr.Value, dbHostNameAttr.Value, dbPortAttr.Value, dbNameAttr.Value, dbUserAttr.Value, dbPasswordAttr.Value, dbStorePeriod.Value);
+                PostgresSettings database = new(dbNumAttr.Value, dbHostNameAttr.Value, dbPortAttr.Value, dbNameAttr.Value, dbUserAttr.Value, dbPasswordAttr.Value, dbStorePeriod.Value);
                 DataBases.Add(database);
             }
+            */
         }
 
     }
